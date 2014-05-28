@@ -1,4 +1,5 @@
 var fs = require('fs');
+var _ = require('lodash');
 
 fs.readFile('resources/app.json', function(err, data) {
   if (err) {
@@ -34,15 +35,16 @@ var adminTasks = {
     game_in_progress = false;
     console.log("Ending game...");
     // TODO: Send results
-    for (player in game) {
-      console.log(game[player]['name'] + " got " + game[player]["correct"].length + " correct")
-    }
+    _.forEach(game, function(player) {
+      console.log(player['name'] + " got " +player["correct"].length + " correct")
+    });
+
     game = undefined;
   },
 }
 
 function onMessage(from, message) {
-  if (admins.indexOf(from) >= 0) { // Stupid JavaScript doesn't have a contains or in funcion??
+  if (_.contains(admins, from)) {
     handleAdminMessage(message);
     return;
   }
@@ -80,7 +82,7 @@ function registerPlayer(player, name) {
 
 function answerQuestion(player, message) {
   var question = getCurrentQuestion();
-  console.log(player + " answering question " + "\"" + question + "\" with " + message)
+  console.log(player + " answering question " + "\"" + question['question'] + "\" with " + message)
   if (message.length < 0) {
     return;
   }
@@ -97,11 +99,11 @@ function answerQuestion(player, message) {
 function getCurrentQuestion() {
   console.log("Getting current question at index " + currentQuestion);
   var question = questions[currentQuestion];
-  console.log("Current question is " + question['question'])
+  console.log("Current question is " + question.question)
   console.log("Choices are: ");
-  for (a in question.choices) {
-    console.log(a + ": " + question.choices[a]);
-  }
-  console.log("Answer is: " + question['answer']);
+  _.forEach(question.choices, function(v, k) {
+    console.log(k + ": " + v);
+  });
+  console.log("Answer is: " + question.answer);
   return question;
 }
