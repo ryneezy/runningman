@@ -19,24 +19,27 @@ var game = undefined;
 var currentQuestion;
 
 var adminTasks = {
-  "start": function() {
+  "s": function() {
     game_in_progress = true;
     game = {};
     currentQuestion = undefined;
     console.log("Started game");
   },
-  "next": function() {
+  "n": function() {
     console.log("Current question index is: " + currentQuestion);
     currentQuestion = currentQuestion === undefined ? 0 : currentQuestion + 1;
     // TODO: Publish next question
     question = getCurrentQuestion();
   },
-  "end": function() {
+  "e": function() {
     game_in_progress = false;
     console.log("Ending game...");
     // TODO: Send results
     _.forEach(game, function(player) {
-      console.log(player['name'] + " got " +player["correct"].length + " correct")
+      var correctAnswers = _.filter(player["correct"], function(answer, question) {
+        return answer
+      })
+      console.log(player['name'] + " got " + correctAnswers.length + " correct")
     });
 
     game = undefined;
@@ -76,7 +79,7 @@ function registerPlayer(player, name) {
   console.log("Registering player " + name + ", with key " + player)
   game[player] = {
     "name": name,
-    "correct": []
+    "correct": {}
   }
 }
 
@@ -84,19 +87,32 @@ function answerQuestion(player, message) {
   var question = getCurrentQuestion();
   console.log(player + " answering question " + "\"" + question['question'] + "\" with " + message)
   if (message.length < 0) {
+    console.log("Did not receive answer");
     return;
   }
 
   answer = message.toLowerCase().charAt(0)
-  if (answer == question['answer']) {
-    game[player]['correct'].push(currentQuestion)
-    console.log("question correct");
-  } else {
-    console.log("question incorrect");
+  if (!_.has(question.choices, answer)) {
+    console.log("Invalid answer");
+    return;
   }
+
+  if (_.has(game[player]['correct'], currentQuestion)) {
+    console.log(player + " already answered question " + currentQuestion)
+    return;
+  }
+
+  var correct = answer == question.answer
+  console.log(player + " answered question " + currentQuestion + " correctly: " + correct);
+  game[player]['correct'][currentQuestion] = correct
 }
 
 function getCurrentQuestion() {
+  if (currentQuestion >= questions.length) {
+    console.log("No more questions!");
+    return undefined;
+  }
+
   console.log("Getting current question at index " + currentQuestion);
   var question = questions[currentQuestion];
   console.log("Current question is " + question.question)
