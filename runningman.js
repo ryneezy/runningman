@@ -33,23 +33,44 @@ function RunningMan(admins, questions, notifier) {
 
   this.publishResults = function() {
     // Calculate scores
-    var scores = _.mapValues(that.game, function(profile, player, o) {
+    var scores = _.mapValues(that.game, function(profile, player, __) {
       var correctAnswers = _.filter(profile['correct'], function(answer, __) {
-        return answer == "correct"
+        return answer[0] == "correct"
       });
 
-      return correctAnswers.length
+      var timeToAnswer =
+        _.reduce(_.pull(_.flatten(correctAnswers), "correct"), function(sum, num) {
+          return sum + num;
+        });
+
+      var result = {
+        "name": profile.name,
+        "phone_number": player,
+        "total_correct": correctAnswers.length,
+        "time_to_answer": timeToAnswer
+      }
+
+      return result;
     });
 
+    var sortedResults = _.sortBy(_.toArray(scores), function(r) {
+      // lodash sorted in asc order, hence the negation.
+      return -1 * r['total_correct']; // TODO: Find a way to calculate time spent to break ties.
+    })
+
+
     // Send scores to each player
-    _.forEach(scores, function(score, player) {
-      notifier.notify(player, "You got " + score + " questions correct");
+    _.forEach(sortedResults, function(result) {
+      var n = result['name'] + ", you got " + result['total_correct'] + " questions correct";
+      notifier.notify(result['phone_number'], n);
     });
 
     var report = "Trivia Results:"
     // lodash's reduce function on objects suck. Can't give it a seed value!
-    _.forEach(scores, function(score, player) {
-      report += "\n" + player + ": " + score;
+    var endSlice = sortedResults.length > 3 ? 3 : sortedResults.length;
+    var topResults = sortedResults.slice(0, endSlice);
+    _.forEach(topResults, function(result) {
+      report += "\n" + result['name'] + " (" + result['phone_number'] + "): " + result['total_correct'];
     });
 
     _.forEach(admins, function(admin) {
@@ -136,7 +157,8 @@ function RunningMan(admins, questions, notifier) {
     }
 
     var correct = answer == question.answer ? "correct" : "incorrect";
-    that.game[player]['correct'][that.questionIndex] = correct
+    var answerRecord = [correct, _.now()];
+    that.game[player]['correct'][that.questionIndex] = answerRecord;
     var n = "You answered " + question.question + " " + correct;
     notifier.notify(player, n);
   }
