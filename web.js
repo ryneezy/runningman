@@ -14,14 +14,14 @@ app.use(logfmt.requestLogger());
 app.use(bodyParser())
 
 app.get('/', function(req, res) {
-  res.send('hello world!');
+  res.send(200);
 });
 
 app.post('/runningman', function(req, res) {
   var From = req.body.From
   var Body = req.body.Body
   usainBolt.onMessage(From, Body)
-  res.send("bla");
+  res.send(200);
 
 });
 

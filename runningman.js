@@ -26,16 +26,35 @@ function RunningMan(admins, questions, notifier) {
     "e": function() {
       that.gameInProgress = false;
       console.log("Ending game...");
-      // TODO: Send results
-      _.forEach(that.game, function(player) {
-        var correctAnswers = _.filter(player["correct"], function(answer, question) {
-          return answer
-        })
-        console.log(player['name'] + " got " + correctAnswers.length + " correct")
-      });
-
+      that.publishResults();
       that.game = undefined;
     },
+  }
+
+  this.publishResults = function() {
+    // Calculate scores
+    var scores = _.mapValues(that.game, function(profile, player, o) {
+      var correctAnswers = _.filter(profile['correct'], function(answer, __) {
+        return answer == "correct"
+      });
+
+      return correctAnswers.length
+    });
+
+    // Send scores to each player
+    _.forEach(scores, function(score, player) {
+      notifier.notify(player, "You got " + score + " questions correct");
+    });
+
+    var report = "Trivia Results:"
+    // lodash's reduce function on objects suck. Can't give it a seed value!
+    _.forEach(scores, function(score, player) {
+      report += "\n" + player + ": " + score;
+    });
+
+    _.forEach(admins, function(admin) {
+      notifier.notify(admin, report);
+    });
   }
 
   this.publishQuestion = function (question) {
@@ -61,10 +80,21 @@ function RunningMan(admins, questions, notifier) {
       return;
     }
 
+    if (!that.game) {
+      _.forEach(that.admins, function(admin) {
+        notifier.notify(admin, "Cannot process admin request. No game in progress");
+      });
+    }
+
     that.adminTasks[task]();
   }
 
   this.handlePlayerMessage = function (player, message) {
+    if (!that.game) {
+      console.log("Cannot process player message. No game in progress.");
+      return;
+    }
+
     console.log("Handling player message from player " + player);
     if (!(player in that.game)) {
       that.registerPlayer(player, message);
@@ -80,30 +110,35 @@ function RunningMan(admins, questions, notifier) {
       "name": name,
       "correct": {}
     }
+    notifier.notify(player, "Welcome " + name + "!");
   }
 
   this.answerQuestion = function(player, message) {
     var question = that.getCurrentQuestion();
     console.log(player + " answering question " + "\"" + question['question'] + "\" with " + message)
     if (message.length < 0) {
-      console.log("Did not receive answer");
+      var n = "You did not send an answer. Try again.\n" + that.formatQuestion(question);
+      notifier.notify(player, n);
       return;
     }
 
     answer = message.toLowerCase().charAt(0)
     if (!_.has(question.choices, answer)) {
-      console.log("Invalid answer");
+      var n = "'" + answer + "' is an invalid answer. Try again.\n" + that.formatQuestion(question);
+      notifier.notify(player, n);
       return;
     }
 
     if (_.has(that.game[player]['correct'], that.questionIndex)) {
-      console.log(player + " already answered question " + that.questionIndex)
+      var n = "You already answered question " + question.question;
+      notifier.notify(player, n);
       return;
     }
 
-    var correct = answer == question.answer
-    console.log(player + " answered question " + that.questionIndex + " correctly: " + correct);
+    var correct = answer == question.answer ? "correct" : "incorrect";
     that.game[player]['correct'][that.questionIndex] = correct
+    var n = "You answered " + question.question + " " + correct;
+    notifier.notify(player, n);
   }
 
   this.getCurrentQuestion = function() {
@@ -114,11 +149,7 @@ function RunningMan(admins, questions, notifier) {
 
     console.log("Getting current question at index " + that.questionIndex);
     var question = that.questions[that.questionIndex];
-    console.log("Current question is " + question.question)
-    console.log("Choices are: ");
-    _.forEach(question.choices, function(choice, question) {
-      console.log(choice + ": " + question);
-    });
+    console.log("Current question is " + that.formatQuestion(question));
     console.log("Answer is: " + question.answer);
     return question;
   }
@@ -134,4 +165,3 @@ RunningMan.prototype.onMessage = function onMessage(from, message) {
 
   this.handlePlayerMessage(from, message);
 }
-
