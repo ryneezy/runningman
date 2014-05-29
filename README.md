@@ -3,5 +3,6 @@
 ### How do I get set up? ###
 
 * Install nodejs and npm
-* ```npm install```
+* Change to project directory
+* ```npm install .```
 * ```node web.js```
