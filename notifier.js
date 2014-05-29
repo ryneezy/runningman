@@ -8,7 +8,7 @@ function Notifier(accountSid, authToken, from) {
 exports.TwilioNotifier = Notifier
 
 Notifier.prototype.notify = function(to, message) {
-  this.client.sms.messages.create({
+  this.client.messages.create({
     to: to,
     from: this.from,
     body: message
