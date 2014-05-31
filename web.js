@@ -14,18 +14,20 @@ app.use(logfmt.requestLogger());
 app.use(bodyParser())
 
 app.get('/', function(req, res) {
-  res.send(200);
+  res.writeHead(204);
+  res.end();
 });
 
 app.post('/runningman', function(req, res) {
   var From = req.body.From
   var Body = req.body.Body
   usainBolt.onMessage(From, Body)
-  res.send(200);
+  res.writeHead(204);
+  res.end();
 
 });
 
-var port = Number(process.env.PORT || 8080);
+var port = Number(process.env.PORT || 5000);
 app.listen(port, function() {
   console.log("Listening on port " + port);
 });
