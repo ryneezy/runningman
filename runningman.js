@@ -65,8 +65,8 @@ function RunningMan(admins, questions, notifier) {
       notifier.notify(result['phone_number'], n);
     });
 
+    // Get top 3 results and send to admins
     var report = "Trivia Results:"
-    // lodash's reduce function on objects suck. Can't give it a seed value!
     var endSlice = sortedResults.length > 3 ? 3 : sortedResults.length;
     var topResults = sortedResults.slice(0, endSlice);
     _.forEach(topResults, function(result) {
@@ -95,16 +95,15 @@ function RunningMan(admins, questions, notifier) {
     return s;
   }
 
-  this.handleAdminMessage = function (task) {
+  this.handleAdminMessage = function (admin, task) {
     if (!(task in that.adminTasks)) {
-      console.log("Invalid admin task " + task);
+      notifier.notify(admin, "Invalid admin task \"" + task + "\"");
       return;
     }
 
-    if (!that.game) {
-      _.forEach(that.admins, function(admin) {
-        notifier.notify(admin, "Cannot process admin request. No game in progress");
-      });
+    if (!that.game && task != 's') {
+      notifier.notify(admin, "Cannot process admin request. No game in progress");
+      return;
     }
 
     that.adminTasks[task]();
@@ -181,7 +180,7 @@ exports.RunningMan = RunningMan
 
 RunningMan.prototype.onMessage = function onMessage(from, message) {
   if (_.contains(this.admins, from)) {
-    this.handleAdminMessage(message);
+    this.handleAdminMessage(from, message);
     return;
   }
 
