@@ -18,7 +18,12 @@ function RunningMan(admins, questions, notifier) {
     },
     "n": function() {
       console.log("Current question index is: " + that.questionIndex);
-      that.questionIndex = that.questionIndex === undefined ? 0 : that.questionIndex + 1;
+      if (that.questionIndex === undefined) {
+        that.questionIndex = 0;
+      } else {
+        that.expireQuestions();
+        that.questionIndex++;
+      }
       that.publishQuestion(that.getCurrentQuestion());
     },
     "e": function() {
@@ -28,11 +33,23 @@ function RunningMan(admins, questions, notifier) {
     },
   }
 
+  this.expireQuestions = function() {
+    var expireTime = _.now()
+    _.forEach(that.game, function(profile, __) {
+      if (profile['correct'][that.questionIndex] === undefined) {
+        profile['correct'][that.questionIndex] = [ 'incorrect', expireTime ];
+      }
+      var timeToAnswer = profile['correct'][that.questionIndex][1];
+      profile['correct'][that.questionIndex].push(expireTime - timeToAnswer);
+      console.log(JSON.stringify(profile));
+    });
+  }
+
   this.publishResults = function() {
     // Calculate scores
     var scores = _.mapValues(that.game, function(profile, player, __) {
       var correctAnswers = _.filter(profile['correct'], function(answer, __) {
-        return answer[0] == "correct"
+        return answer[0] == 'correct'
       });
 
       var timeToAnswer =
@@ -52,7 +69,7 @@ function RunningMan(admins, questions, notifier) {
 
     var sortedResults = _.sortBy(_.toArray(scores), function(r) {
       // lodash sorted in asc order, hence the negation.
-      return -1 * r.total_correct; // TODO: Find a way to calculate time spent to break ties.
+      return -1 * (r.total_correct + r.time_to_answer);
     })
 
 
