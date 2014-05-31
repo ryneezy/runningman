@@ -7,13 +7,11 @@ function RunningMan(admins, questions, notifier) {
   this.questions = questions;
   this.notifier = notifier;
 
-  this.gameInProgress = false;
   this.game = undefined;
   this.questionIndex = undefined;
 
   this.adminTasks = {
     "s": function() {
-      that.gameInProgress = true;
       that.game = {};
       that.questionIndex = undefined;
       console.log("Started game");
@@ -24,7 +22,6 @@ function RunningMan(admins, questions, notifier) {
       that.publishQuestion(that.getCurrentQuestion());
     },
     "e": function() {
-      that.gameInProgress = false;
       console.log("Ending game...");
       that.publishResults();
       that.game = undefined;
@@ -55,14 +52,14 @@ function RunningMan(admins, questions, notifier) {
 
     var sortedResults = _.sortBy(_.toArray(scores), function(r) {
       // lodash sorted in asc order, hence the negation.
-      return -1 * r['total_correct']; // TODO: Find a way to calculate time spent to break ties.
+      return -1 * r.total_correct; // TODO: Find a way to calculate time spent to break ties.
     })
 
 
     // Send scores to each player
     _.forEach(sortedResults, function(result) {
-      var n = result['name'] + ", you got " + result['total_correct'] + " questions correct";
-      notifier.notify(result['phone_number'], n);
+      var n = result.name + ", you got " + result.total_correct + " questions correct";
+      notifier.notify(result.phone_number, n);
     });
 
     // Get top 3 results and send to admins
@@ -70,7 +67,7 @@ function RunningMan(admins, questions, notifier) {
     var endSlice = sortedResults.length > 3 ? 3 : sortedResults.length;
     var topResults = sortedResults.slice(0, endSlice);
     _.forEach(topResults, function(result) {
-      report += "\n" + result['name'] + " (" + result['phone_number'] + "): " + result['total_correct'];
+      report += "\n" + result.name + " (" + result.phone_number + "): " + result.total_correct;
     });
 
     _.forEach(admins, function(admin) {
@@ -107,6 +104,7 @@ function RunningMan(admins, questions, notifier) {
     }
 
     that.adminTasks[task]();
+    notifier.notify(admin, "OK");
   }
 
   this.handlePlayerMessage = function (player, message) {
@@ -135,7 +133,7 @@ function RunningMan(admins, questions, notifier) {
 
   this.answerQuestion = function(player, message) {
     var question = that.getCurrentQuestion();
-    console.log(player + " answering question " + "\"" + question['question'] + "\" with " + message)
+    console.log(player + " answering question " + "\"" + question.question + "\" with " + message)
     if (message.length < 0) {
       var n = "You did not send an answer. Try again.\n" + that.formatQuestion(question);
       notifier.notify(player, n);
