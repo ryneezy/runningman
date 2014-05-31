@@ -35,33 +35,38 @@ function RunningMan(admins, questions, notifier) {
 
   this.expireQuestions = function() {
     var expireTime = _.now()
-    _.forEach(that.game, function(profile, __) {
-      if (profile['correct'][that.questionIndex] === undefined) {
-        profile['correct'][that.questionIndex] = [ 'incorrect', expireTime ];
+    _.forEach(that.game, function(record, __) {
+      var answers = record.answers;
+      if (answers[that.questionIndex] === undefined) {
+        answers[that.questionIndex] = {
+          'correct': false,
+          'answer_time': expireTime
+        }
       }
-      var timeToAnswer = profile['correct'][that.questionIndex][1];
-      profile['correct'][that.questionIndex].push(expireTime - timeToAnswer);
-      console.log(JSON.stringify(profile));
+
+      var answerTime = answers[that.questionIndex].answer_time;
+      answers[that.questionIndex].time_bonus = expireTime - answerTime;
+      console.log(JSON.stringify(record));
     });
   }
 
   this.publishResults = function() {
     // Calculate scores
-    var scores = _.mapValues(that.game, function(profile, player, __) {
-      var correctAnswers = _.filter(profile['correct'], function(answer, __) {
-        return answer[0] == 'correct'
+    var scores = _.mapValues(that.game, function(record, player) {
+      var correctAnswers = _.filter(record.answers, function(answer, __) {
+        return answer.correct;
       });
 
-      var timeToAnswer = 0;
-      _.forEach(profile['correct'], function(ans, __) {
-        timeToAnswer += ans[2];
-      });
+
+      var totalTimeBonus = _.reduce(record.answers, function(sum, ans, __) {
+        return sum + ans.time_bonus;
+      }, 0 )
 
       var result = {
-        "name": profile.name,
+        "name": record.name,
         "phone_number": player,
         "total_correct": correctAnswers.length,
-        "time_to_answer": timeToAnswer
+        "total_time_bonus": totalTimeBonus
       }
 
       return result;
@@ -69,7 +74,7 @@ function RunningMan(admins, questions, notifier) {
 
     var sortedResults = _.sortBy(_.toArray(scores), function(r) {
       // lodash sorted in asc order, hence the negation.
-      return -1 * (r.total_correct + r.time_to_answer);
+      return -1 * (r.total_correct + r.total_time_bonus);
     })
 
     // Send scores to each player
@@ -83,7 +88,7 @@ function RunningMan(admins, questions, notifier) {
     var endSlice = sortedResults.length > 3 ? 3 : sortedResults.length;
     var topResults = sortedResults.slice(0, endSlice);
     _.forEach(topResults, function(result) {
-      report += "\n" + result.name + " (" + result.phone_number + "): " + result.total_correct;
+      report += "\n" + result.name + " (" + result.phone_number + "): " + result.total_correct; 
     });
 
     _.forEach(admins, function(admin) {
@@ -142,7 +147,7 @@ function RunningMan(admins, questions, notifier) {
     console.log("Registering player " + name + ", with key " + player)
     that.game[player] = {
       "name": name,
-      "correct": {}
+      "answers": {}
     }
     notifier.notify(player, "Welcome " + name + "!");
   }
@@ -157,22 +162,29 @@ function RunningMan(admins, questions, notifier) {
     }
 
     answer = message.toLowerCase().charAt(0)
+
     if (!_.has(question.choices, answer)) {
       var n = "'" + answer + "' is an invalid answer. Try again.\n" + that.formatQuestion(question);
       notifier.notify(player, n);
       return;
     }
 
-    if (_.has(that.game[player]['correct'], that.questionIndex)) {
+    if (_.has(that.game[player].answers, that.questionIndex)) {
       var n = "You already answered question " + question.question;
       notifier.notify(player, n);
       return;
     }
 
-    var correct = answer == question.answer ? "correct" : "incorrect";
-    var answerRecord = [correct, _.now()];
-    that.game[player]['correct'][that.questionIndex] = answerRecord;
-    var n = "You answered " + question.question + " " + correct;
+    var correct = answer == question.answer;
+    var resultString = correct ? "correct" : "incorrect";
+
+    var answerRecord = {
+      "correct": correct,
+      "answer_time": _.now()
+    }
+
+    that.game[player].answers[that.questionIndex] = answerRecord;
+    var n = "You answered " + question.question + " " + resultString;
     notifier.notify(player, n);
   }
 
@@ -184,8 +196,6 @@ function RunningMan(admins, questions, notifier) {
 
     console.log("Getting current question at index " + that.questionIndex);
     var question = that.questions[that.questionIndex];
-    console.log("Current question is " + that.formatQuestion(question));
-    console.log("Answer is: " + question.answer);
     return question;
   }
 }
