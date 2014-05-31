@@ -52,10 +52,10 @@ function RunningMan(admins, questions, notifier) {
         return answer[0] == 'correct'
       });
 
-      var timeToAnswer =
-        _.reduce(_.pull(_.flatten(correctAnswers), "correct"), function(sum, num) {
-          return sum + num;
-        });
+      var timeToAnswer = 0;
+      _.forEach(profile['correct'], function(ans, __) {
+        timeToAnswer += ans[2];
+      });
 
       var result = {
         "name": profile.name,
@@ -71,7 +71,6 @@ function RunningMan(admins, questions, notifier) {
       // lodash sorted in asc order, hence the negation.
       return -1 * (r.total_correct + r.time_to_answer);
     })
-
 
     // Send scores to each player
     _.forEach(sortedResults, function(result) {
