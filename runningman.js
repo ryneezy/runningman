@@ -11,22 +11,32 @@ function RunningMan(admins, questions, notifier) {
   this.questionIndex = undefined;
 
   this.adminTasks = {
-    "s": function() {
+    "s": function(admin) {
       that.game = {};
       that.questionIndex = undefined;
       console.log("Started game");
+      notifier.notify(admin, "Game started.");
     },
-    "n": function() {
-      console.log("Current question index is: " + that.questionIndex);
+    "n": function(admin) {
+      if (that.questionIndex >= that.questions.length) {
+        notifier.notify(admin, "No more quetions left.");
+        return;
+      }
+
       if (that.questionIndex === undefined) {
         that.questionIndex = 0;
       } else {
         that.expireQuestions();
         that.questionIndex++;
       }
-      that.publishQuestion(that.getCurrentQuestion());
+
+      var question = that.getCurrentQuestion();
+      if (question) {
+        that.publishQuestion(question);
+        notifier.notify(admin, "At question " + that.questionIndex + ": " + question.question);
+      }
     },
-    "e": function() {
+    "e": function(__) {
       console.log("Ending game...");
       that.publishResults();
       that.game = undefined;
@@ -46,17 +56,36 @@ function RunningMan(admins, questions, notifier) {
 
       var answerTime = answers[that.questionIndex].answer_time;
       answers[that.questionIndex].time_bonus = expireTime - answerTime;
-      console.log(JSON.stringify(record));
     });
   }
 
   this.publishResults = function() {
-    // Calculate scores
+    var results = that.calculateResults();
+
+    // Send scores to each player
+    _.forEach(results, function(result) {
+      var n = result.name + ", you got " + result.total_correct + " questions correct";
+      notifier.notify(result.phone_number, n);
+    });
+
+    // Get top 3 results and send to admins
+    var report = "Trivia Results:"
+    var endSlice = results.length > 3 ? 3 : results.length;
+    var topResults = results.slice(0, endSlice);
+    _.forEach(topResults, function(r) {
+      report += "\n" + r.name + " (" + r.phone_number + "): " + r.total_correct; 
+    });
+
+    _.forEach(admins, function(admin) {
+      notifier.notify(admin, report);
+    });
+  }
+
+  this.calculateResults = function() {
     var scores = _.mapValues(that.game, function(record, player) {
       var correctAnswers = _.filter(record.answers, function(answer, __) {
         return answer.correct;
       });
-
 
       var totalTimeBonus = _.reduce(record.answers, function(sum, ans, __) {
         return sum + ans.time_bonus;
@@ -75,31 +104,12 @@ function RunningMan(admins, questions, notifier) {
     var sortedResults = _.sortBy(_.toArray(scores), function(r) {
       // lodash sorted in asc order, hence the negation.
       return -1 * (r.total_correct + r.total_time_bonus);
-    })
-
-    // Send scores to each player
-    _.forEach(sortedResults, function(result) {
-      var n = result.name + ", you got " + result.total_correct + " questions correct";
-      notifier.notify(result.phone_number, n);
     });
 
-    // Get top 3 results and send to admins
-    var report = "Trivia Results:"
-    var endSlice = sortedResults.length > 3 ? 3 : sortedResults.length;
-    var topResults = sortedResults.slice(0, endSlice);
-    _.forEach(topResults, function(result) {
-      report += "\n" + result.name + " (" + result.phone_number + "): " + result.total_correct; 
-    });
-
-    _.forEach(admins, function(admin) {
-      notifier.notify(admin, report);
-    });
+    return sortedResults;
   }
 
   this.publishQuestion = function (question) {
-    if (!question) {
-      return;
-    }
     _.forEach(that.game, function(__, player) {
       notifier.notify(player, that.formatQuestion(question));
     });
@@ -124,8 +134,7 @@ function RunningMan(admins, questions, notifier) {
       return;
     }
 
-    that.adminTasks[task]();
-    notifier.notify(admin, "OK");
+    that.adminTasks[task](admin);
   }
 
   this.handlePlayerMessage = function (player, message) {
@@ -144,7 +153,7 @@ function RunningMan(admins, questions, notifier) {
   }
 
   this.registerPlayer = function (player, name) {
-    console.log("Registering player " + name + ", with key " + player)
+    console.log("Registering player " + name.trim() + ", with key " + player)
     that.game[player] = {
       "name": name,
       "answers": {}
@@ -164,13 +173,13 @@ function RunningMan(admins, questions, notifier) {
     answer = message.toLowerCase().charAt(0)
 
     if (!_.has(question.choices, answer)) {
-      var n = "'" + answer + "' is an invalid answer. Try again.\n" + that.formatQuestion(question);
+      var n = "\"" + answer + "\" is an invalid answer. Try again.\n\n" + that.formatQuestion(question);
       notifier.notify(player, n);
       return;
     }
 
     if (_.has(that.game[player].answers, that.questionIndex)) {
-      var n = "You already answered question " + question.question;
+      var n = "You already answered question \"" + question.question + "\"";
       notifier.notify(player, n);
       return;
     }
