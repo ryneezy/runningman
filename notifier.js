@@ -1,8 +1,8 @@
 var twilio = require('twilio')
 
-function Notifier(accountSid, authToken, from) {
+function Notifier(from) {
   this.from = from;
-  this.client = new twilio.RestClient(accountSid, authToken);
+  this.client = new twilio.RestClient();
 }
 
 exports.TwilioNotifier = Notifier
@@ -14,7 +14,7 @@ Notifier.prototype.notify = function(to, message) {
     body: message
   }, function(error, message) {
     if (error) {
-      console.log("ERROR " + message);
+      console.log("Twilio Error: " + JSON.stringify(error));
     }
   });
 }
