@@ -124,17 +124,24 @@ function RunningMan(admins, questions, notifier) {
   }
 
   this.handleAdminMessage = function (admin, task) {
-    if (!(task in that.adminTasks)) {
-      notifier.notify(admin, "Invalid admin task \"" + task + "\"");
+    if (!task) {
+      notifier.notify("You must input an admin task.");
       return;
     }
 
-    if (!that.game && task != 's') {
+    var t = task.toLowerCase();
+
+    if (!(t in that.adminTasks)) {
+      notifier.notify(admin, "Invalid admin task \"" + t + "\"");
+      return;
+    }
+
+    if (!that.game && t != 's') {
       notifier.notify(admin, "Cannot process admin request. No game in progress");
       return;
     }
 
-    that.adminTasks[task](admin);
+    that.adminTasks[t](admin);
   }
 
   this.handlePlayerMessage = function (player, message) {
