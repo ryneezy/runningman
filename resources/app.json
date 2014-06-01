@@ -1,0 +1,23 @@
+{
+  "fromNumber": "#{from_number}",
+  "admins": ["#{admin_nums}"],
+  "questions": [
+    {
+      "question": "who's yo daddy?",
+      "choices": {
+        "a": "superman",
+        "b": "batman",
+        "c": "wolverine"
+      },
+      "answer": "a"
+    },
+    {
+      "question": "will the real slim shaddy please stand up",
+      "choices": {
+        "a": "yes",
+        "b": "no"
+      },
+      "answer": "b"
+    }
+  ]
+}
