@@ -12,7 +12,7 @@ A Trivia text app. It's great for playing trivia games at large parties such as 
 1. `node web.js`
 
 ***Example app.json***
-```!javascript
+```javascript
 {
   "fromNumber": "+12022243121",
   "admins": [ "+12024561111", "+17036975131" ],

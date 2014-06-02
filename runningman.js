@@ -115,11 +115,9 @@ function RunningMan(admins, questions, notifier) {
   }
 
   this.formatQuestion = function(question) {
-    var s = question.question + "\n"
-    _.forEach(question.choices, function(answer, choice) {
-      s += choice + ": " + answer + "\n"
-    });
-    return s;
+    return _.reduce(question.choices, function(str, answer, choice) {
+      return str  + "\n" + choice + ": " + answer;
+    }, question.question);
   }
 
   this.handleAdminMessage = function (admin, task) {
