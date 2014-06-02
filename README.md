@@ -11,10 +11,8 @@ A Trivia text app. It's great for playing trivia games at large parties such as 
 1. Edit `resources/app.json` to set your admin phone numbers, and app's fromNumber, and trivia questions. **Note:** Phone numbers must be formatted +12024561111
 1. `node web.js`
 
-*** Example app.json ***
-```
-#!javascript
-
+***Example app.json***
+```!javascript
 {
   "fromNumber": "+12022243121",
   "admins": [ "+12024561111", "+17036975131" ],
