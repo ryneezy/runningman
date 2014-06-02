@@ -69,12 +69,11 @@ function RunningMan(admins, questions, notifier) {
     });
 
     // Get top 3 results and send to admins
-    var report = "Trivia Results:"
     var endSlice = results.length > 3 ? 3 : results.length;
     var topResults = results.slice(0, endSlice);
-    _.forEach(topResults, function(r) {
-      report += "\n" + r.name + " (" + r.phone_number + "): " + r.total_correct; 
-    });
+    var report = _.reduce(topResults, function(rep, rec) {
+      return rep + "\n" + rec.name + " (" + rec.phone_number + "): " + rec.total_correct; 
+    }, "Trivia Results:");
 
     _.forEach(admins, function(admin) {
       notifier.notify(admin, report);
