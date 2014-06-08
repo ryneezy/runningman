@@ -1,4 +1,4 @@
-var _ = require('lodash');
+var _ = require('lodash'); 
 
 function RunningMan(admins, questions, notifier) {
   var that = this // Stupid JS scoping issues. But Node is just so awesome I'll deal with it.
@@ -18,11 +18,6 @@ function RunningMan(admins, questions, notifier) {
       notifier.notify(admin, "Game started.");
     },
     "n": function(admin) {
-      if (that.questionIndex >= that.questions.length) {
-        notifier.notify(admin, "No more quetions left.");
-        return;
-      }
-
       if (that.questionIndex === undefined) {
         that.questionIndex = 0;
       } else {
@@ -30,14 +25,24 @@ function RunningMan(admins, questions, notifier) {
         that.questionIndex++;
       }
 
+      if (that.questionIndex >= that.questions.length) {
+        notifier.notify(admin, "No more quetions left.");
+        return;
+      }
+
       var question = that.getCurrentQuestion();
       if (question) {
         that.publishQuestion(question);
-        notifier.notify(admin, "At question " + that.questionIndex + ": " + question.question);
+        var m = "At question " + that.questionIndex + ": " + question.question;
+        if (this.questionIndex >= questions.length) {
+          m += "\nAt last question";
+        }
+        notifier.notify(admin, m);
       }
     },
     "e": function(__) {
       console.log("Ending game...");
+      that.expireQuestions();
       that.publishResults();
       that.game = undefined;
     },
@@ -47,8 +52,8 @@ function RunningMan(admins, questions, notifier) {
     var expireTime = _.now()
     _.forEach(that.game, function(record, __) {
       var answers = record.answers;
-      if (answers[that.questionIndex] === undefined) {
-        answers[that.questionIndex] = {
+      if (answers[that.questionIndex] === undefined || !answers[that.questionIndex].correct) {
+        record.answers[that.questionIndex] = {
           'correct': false,
           'answer_time': expireTime
         }
@@ -122,7 +127,7 @@ function RunningMan(admins, questions, notifier) {
 
   this.handleAdminMessage = function (admin, task) {
     if (!task) {
-      notifier.notify("You must input an admin task.");
+      notifier.notify(admin, "You must input an admin task.");
       return;
     }
 
@@ -142,7 +147,7 @@ function RunningMan(admins, questions, notifier) {
   }
 
   this.handlePlayerMessage = function (player, message) {
-    if (!that.game) {
+    if (!that.game || that.questionIndex >= that.questions.length) {
       console.log("Cannot process player message. No game in progress.");
       return;
     }

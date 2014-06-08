@@ -1,0 +1,34 @@
+{
+  "fromNumber": "+12134733231",
+  "admins": [ "+12134737001" ],
+  "questions": [
+    {
+      "question": "Who was the first President of the United States?",
+      "choices": {
+        "a": "John F Kennedy",
+        "b": "George Washington",
+        "c": "Abraham Lincoln",
+        "d": "Bill Clinton"
+      },
+      "answer": "b"
+    },
+    {
+      "question": "Who invented alternating current?",
+      "choices": {
+        "a": "Albert Einstein",
+        "b": "Isaac Newton",
+        "c": "Nikola Tesla"
+      },
+      "answer": "c"
+    },
+    {
+      "question": "What US event did Franklin Roosevelt refer to in his Infamy Speech?",
+      "choices": {
+        "a": "911 Attack",
+        "b": "Boston Tea Party",
+        "c": "Japanese attack on Pearl Harbor"
+      },
+      "answer": "c"
+    }
+  ]
+}
